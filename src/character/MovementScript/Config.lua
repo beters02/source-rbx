@@ -3,7 +3,7 @@ local Config = {
     --[[General]]
     VISUALIZE_FEET_HB = false, -- Visualize Feet Hitbox
     VISUALIZE_COLLIDE_AND_SLIDE = false,
-    STEP_OFFSET = 1.3,
+    STEP_OFFSET = 1.2,
     MASS = 16,
     FRICTION = 6,
     GRAVITY = 0.6,
@@ -30,7 +30,7 @@ local Config = {
     TORSO_TO_FEET = 3.1,
     FEET_HB_SIZE = Vector3.new(2,2,2),
     TORSO_HB_SIZE = Vector3.new(3,1,3),
-    
+
 }
 
 return Config
