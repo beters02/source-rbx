@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 
 PhysicsService:RegisterCollisionGroup("PlayerMovement")
 PhysicsService:RegisterCollisionGroup("Players")
-PhysicsService:CollisionGroupSetCollidable("Players", "Default", false)
 PhysicsService:CollisionGroupSetCollidable("Players", "PlayerMovement", false)
 
 Players.PlayerAdded:Connect(function(player)

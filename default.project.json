@@ -7,6 +7,9 @@
       "StarterCharacterScripts": {
         "$path": "src/character"
       }
+    },
+    "ServerScriptService": {
+      "$path": "src/server"
     }
   }
 }
