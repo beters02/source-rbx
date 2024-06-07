@@ -1,0 +1,12 @@
+{
+  "name": "Roblox Source Engine Movement",
+  "tree": {
+    "$className": "DataModel",
+
+    "StarterPlayer": {
+      "StarterCharacterScripts": {
+        "$path": "src/character"
+      }
+    }
+  }
+}
