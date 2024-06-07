@@ -45,14 +45,14 @@ function Shared:GetMovementDirection(groundNormal)
 
     local forwardMove = groundNormal:Cross(self.collider.CFrame.RightVector)
     local sideMove = groundNormal:Cross(forwardMove)
-	return (forwardMove * forward + sideMove * side).Unit
+    return (forwardMove * forward + sideMove * side).Unit
 end
 
 function Shared:GetMovementParams()
     local params = RaycastParams.new()
     params.FilterDescendantsInstances = {self.character}
     params.FilterType = Enum.RaycastFilterType.Exclude
-    params.RespectCanCollide = true
+    params.RespectCanCollide = false
     params.CollisionGroup = "PlayerMovement"
     return params
 end
