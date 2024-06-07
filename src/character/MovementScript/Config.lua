@@ -1,7 +1,7 @@
 local Config = {
 
     --[[General]]
-    VISUALIZE_FEET_HB = true, -- Visualize Feet Hitbox
+    VISUALIZE_FEET_HB = false, -- Visualize Feet Hitbox
     VISUALIZE_COLLIDE_AND_SLIDE = false,
     STEP_OFFSET = 1.2,
     --STEP_OFFSET = 0,
