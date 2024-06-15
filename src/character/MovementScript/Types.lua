@@ -8,9 +8,9 @@ export type Movement = {
     vis_coll_parts: {Part},
     config: MovementConfig,
     mover: LinearVelocity,
+    up_mover: LinearVelocity,
     dt: number,
     states: MovementStates,
-    --gravity_mover: VectorForce,
 }
 
 export type MovementConfig = {
@@ -41,12 +41,15 @@ export type MovementConfig = {
 
     STEP_OFFSET: number,
     TORSO_TO_FEET: number,
+
+    MAX_SLOPE_ANGLE: number,
 }
 
 export type MovementStates = {
     grounded: boolean,
     air_friction: number,
     input_vec: number,
+    surfing: boolean
 }
 
 return nil

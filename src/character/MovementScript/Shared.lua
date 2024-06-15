@@ -13,6 +13,10 @@ local function HandleVisualization(self, cf, size)
     self.vispart.Size = size
 end
 
+local function getAngle(normal)
+    return math.deg(math.acos(normal:Dot(Vector3.yAxis)))
+end
+
 function Shared:IsGrounded()
     local params = Shared.GetMovementParams(self)
     local cf = CFrame.new(self.collider.CFrame.Position) - Vector3.new(0, self.config.LEG_HEIGHT, 0)
@@ -20,7 +24,13 @@ function Shared:IsGrounded()
     local dir = Vector3.new(0,-1,0)
     local result = workspace:Blockcast(cf, size, dir, params)
     HandleVisualization(self, cf, size)
-    return result or false
+
+    local isSurfing = result and getAngle(result.Normal) >= self.config.MAX_SLOPE_ANGLE
+    if isSurfing or not result then
+        return false, isSurfing
+    end
+
+    return result
 end
 
 function Shared:RotateCharacter()
@@ -63,6 +73,14 @@ function Shared:FootCast(dir)
     local size = self.config.FEET_HB_SIZE
     local result = workspace:Blockcast(cf, size, dir, params)
     return result or false
+end
+
+function Shared:VectorMa(start: Vector3, scale: number, direction: Vector3)
+    return Vector3.new(
+        start.X + direction.X * scale,
+        start.Y + direction.Y * scale,
+        start.Z + direction.Z * scale
+    )
 end
 
 return Shared

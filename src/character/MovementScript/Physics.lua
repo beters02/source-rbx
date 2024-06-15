@@ -25,6 +25,24 @@ function Physics:ApplyGroundVelocity(groundNormal: Vector3)
 
     Physics.ApplyGroundAcceleration(self, wishDir, wishSpeed)
 	Collisions.CollideAndSlide(self, Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y))
+
+	-- calculate & apply slope movement
+	local curVel: Vector3 = Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y)
+	local collVel: Vector3 = self.collider.Velocity
+	local forVel: Vector3 = groundNormal:Cross(CFrame.Angles(0,math.rad(90),0).LookVector * curVel)
+	local yVel: Vector3
+
+	if forVel.Magnitude <= 0 then
+		yVel = 0
+	else
+		yVel = forVel.Unit.Y * curVel.Magnitude
+	end
+
+	self.collider.Velocity = Vector3.new(
+		collVel.X,
+		yVel,
+		collVel.Z
+	)
 end
 
 function Physics:ApplyGroundAcceleration(wishDir: Vector3, wishSpeed: number)
