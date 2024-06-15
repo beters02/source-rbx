@@ -7,20 +7,39 @@ local function HandleVisualization(self, cf, size)
     end
     if not self.vispart then
         self.vispart = Instance.new("Part", self.character)
+        self.vispart.CanCollide = false
+        self.vispart.Anchored = true
     end
-    self.vispart.CanCollide = false
+    
     self.vispart.CFrame = cf
     self.vispart.Size = size
 end
 
-function Shared:IsGrounded()
+function Shared.GetAngle(normal)
+    return math.deg(math.acos(normal:Dot(Vector3.yAxis)))
+end
+
+function Shared:IsGrounded(dir): (boolean, boolean?, RaycastResult?, number?)
     local params = Shared.GetMovementParams(self)
-    local cf = CFrame.new(self.collider.CFrame.Position) - Vector3.new(0, self.config.LEG_HEIGHT, 0)
+    local cf = CFrame.new(self.collider.Position) - Vector3.new(0, self.collider.Size.Y/2, 0)
     local size = self.config.FEET_HB_SIZE
-    local dir = Vector3.new(0,-1,0)
+    dir = dir or Vector3.new(0,-1 * self.collider.Size.Y-self.config.FOOT_OFFSET_AMOUNT,0)
+
     local result = workspace:Blockcast(cf, size, dir, params)
+
     HandleVisualization(self, cf, size)
-    return result or false
+    
+    if not result then
+        return false
+    end
+
+    local steepness = Shared.GetAngle(result.Normal)
+    local isSurfing = steepness >= self.config.MIN_SLOPE_ANGLE and steepness <= self.config.MAX_SLOPE_ANGLE
+    if isSurfing then
+        return false, true, result, steepness
+    end
+
+    return true, false, result
 end
 
 function Shared:RotateCharacter()
@@ -50,19 +69,19 @@ end
 
 function Shared:GetMovementParams()
     local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {self.character}
+    params.FilterDescendantsInstances = {self.character, workspace.CurrentCamera}
     params.FilterType = Enum.RaycastFilterType.Exclude
     params.RespectCanCollide = false
     params.CollisionGroup = "PlayerMovement"
     return params
 end
 
-function Shared:FootCast(dir)
-    local params = Shared.GetMovementParams(self)
-    local cf = CFrame.new(self.collider.CFrame.Position) - Vector3.new(0, self.config.LEG_HEIGHT, 0)
-    local size = self.config.FEET_HB_SIZE
-    local result = workspace:Blockcast(cf, size, dir, params)
-    return result or false
+function Shared:VectorMa(start: Vector3, scale: number, direction: Vector3)
+    return Vector3.new(
+        start.X + direction.X * scale,
+        start.Y + direction.Y * scale,
+        start.Z + direction.Z * scale
+    )
 end
 
 return Shared

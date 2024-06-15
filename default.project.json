@@ -10,6 +10,10 @@
     },
     "ServerScriptService": {
       "$path": "src/server"
+    },
+    "ReplicatedStorage": {
+      "$path": "src/shared",
+      "$ignoreUnknownInstances": true
     }
   }
 }

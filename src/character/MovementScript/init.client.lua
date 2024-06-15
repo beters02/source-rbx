@@ -16,20 +16,41 @@ local function Init()
     Movement.config = require(script:WaitForChild("Config"))
 
     local mover = Instance.new("LinearVelocity", Movement.collider)
-    mover.Attachment0 = Instance.new("Attachment", Movement.collider)
+    local a0 = Instance.new("Attachment", Movement.collider)
+    a0.Name = "MovementAttachment"
+    mover.Attachment0 = a0
     mover.MaxForce = 10000000
     mover.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
     mover.PrimaryTangentAxis = Vector3.new(1,0,0)
     mover.SecondaryTangentAxis = Vector3.new(0,0,1)
     Movement.mover = mover
 
-    Movement.gravity_mover = Instance.new("BodyForce", Movement.collider)
-    Movement.gravity_mover.Force = Vector3.new(0, (1-Movement.config.GRAVITY)*196.2, 0) * Movement.config.MASS
+    -- Will figure this out soon.
+    --[[local upMover = Instance.new("LinearVelocity", Movement.collider)
+    upMover.Attachment0 = Movement.collider:WaitForChild("MovementAttachment")
+    upMover.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+    upMover.ForceLimitsEnabled = true
+    upMover.MaxAxesForce = Vector3.new(0, 100000, 0)
+    upMover.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+    Movement.up_mover = upMover]]
 
-    Movement.states = {grounded = false, air_friction = 0, input_vec = Vector3.zero}
+    Movement.states = {grounded = false, air_friction = 0, input_vec = Vector3.zero, surfing = false}
 end
 
 --
+
+local function Surf()
+    Physics.ApplyFriction(Movement, false, true)
+end
+
+local function Gravity()
+    local mod = Movement.config.GRAVITY * Movement.dt
+    Movement.collider.Velocity = Vector3.new(
+        Movement.collider.Velocity.X,
+        Movement.collider.Velocity.Y - mod,
+        Movement.collider.Velocity.Z
+    )
+end
 
 local function Air()
     Physics.ApplyAirVelocity(Movement)
@@ -40,6 +61,8 @@ local function Ground(groundNormal: Vector3)
 end
 
 local function Jump()
+    Movement.temp_jump_last = tick()
+    Movement.states.jumping = true
 	Movement.collider.Velocity = Vector3.new(
         Movement.collider.Velocity.X,
         Movement.config.JUMP_VELOCITY,
@@ -48,19 +71,28 @@ local function Jump()
 end
 
 local function ProcessMovement()
-    local res = Shared.IsGrounded(Movement)
-    local norm = res and res.Normal
-    Movement.states.grounded = norm and true
+    local isGrounded, isSurfing, result = Shared.IsGrounded(Movement)
+    Movement.states.grounded = isGrounded or false
+    Movement.states.surfing = isSurfing or false
+
+    if Movement.collider.Velocity.Y < 0 then
+        Movement.states.jumping = false
+    end
 
     Shared.RotateCharacter(Movement)
 
-    if not Movement.states.grounded then
+    if Movement.states.jumping or not Movement.states.grounded then
+        if isSurfing and Movement.collider.Velocity.Y > 0 then
+            Surf()
+        end
+
         Air()
+        Gravity()
     elseif Movement.Keys.Space > 0 then
         Jump()
         Air()
     else
-        Ground(norm)
+        Ground(result.Normal)
     end
 end
 

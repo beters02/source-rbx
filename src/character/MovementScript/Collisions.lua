@@ -191,7 +191,7 @@ function Collisions:CollideAndSlide(wishedSpeed: Vector3)
 			newSpeed -= result.Instance.Velocity
 
             self.mover.PlaneVelocity = Vector2.new(newSpeed.X, newSpeed.Z)
-			self.collider.Velocity = Vector3.new(newSpeed.X, (self.collider.Velocity.Y), newSpeed.Z) -- anti sticking has to be applied on collider velocity as well (resolves head & in air collision)
+			--self.collider.Velocity = Vector3.new(newSpeed.X, (self.collider.Velocity.Y), newSpeed.Z) -- anti sticking has to be applied on collider velocity as well (resolves head & in air collision)
 		end
 	end
 
