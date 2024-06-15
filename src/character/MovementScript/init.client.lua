@@ -25,31 +25,31 @@ local function Init()
     mover.SecondaryTangentAxis = Vector3.new(0,0,1)
     Movement.mover = mover
 
-    local upMover = Instance.new("LinearVelocity", Movement.collider)
+    -- Will figure this out soon.
+    --[[local upMover = Instance.new("LinearVelocity", Movement.collider)
     upMover.Attachment0 = Movement.collider:WaitForChild("MovementAttachment")
     upMover.ForceLimitMode = Enum.ForceLimitMode.PerAxis
     upMover.ForceLimitsEnabled = true
-    upMover.MaxAxesForce = Vector3.new(0, 0, 0)
+    upMover.MaxAxesForce = Vector3.new(0, 100000, 0)
     upMover.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-    Movement.up_mover = upMover
-    
-    --Movement.gravity_mover = Instance.new("BodyForce", Movement.collider)
-    --Movement.gravity_mover.Force = Vector3.new(0, (1-Movement.config.GRAVITY)*196.2, 0) * Movement.config.MASS
+    Movement.up_mover = upMover]]
 
     Movement.states = {grounded = false, air_friction = 0, input_vec = Vector3.zero, surfing = false}
 end
 
 --
 
+local function Surf()
+    Physics.ApplyFriction(Movement, false, true)
+end
+
 local function Gravity()
-    --local mod = (1-Movement.config.GRAVITY)*196.2 * Movement.config.MASS * Movement.dt
     local mod = Movement.config.GRAVITY * Movement.dt
     Movement.collider.Velocity = Vector3.new(
         Movement.collider.Velocity.X,
         Movement.collider.Velocity.Y - mod,
         Movement.collider.Velocity.Z
     )
-    --_surfer.moveData.velocity.y += _surfer.baseVelocity.y * _deltaTime;
 end
 
 local function Air()
@@ -61,6 +61,8 @@ local function Ground(groundNormal: Vector3)
 end
 
 local function Jump()
+    Movement.temp_jump_last = tick()
+    Movement.states.jumping = true
 	Movement.collider.Velocity = Vector3.new(
         Movement.collider.Velocity.X,
         Movement.config.JUMP_VELOCITY,
@@ -69,49 +71,28 @@ local function Jump()
 end
 
 local function ProcessMovement()
-    local res, isSurfing = Shared.IsGrounded(Movement)
-    local norm = res and res.Normal
-    Movement.states.grounded = norm and true
-    Movement.states.surfing = isSurfing
+    local isGrounded, isSurfing, result = Shared.IsGrounded(Movement)
+    Movement.states.grounded = isGrounded or false
+    Movement.states.surfing = isSurfing or false
+
+    if Movement.collider.Velocity.Y < 0 then
+        Movement.states.jumping = false
+    end
 
     Shared.RotateCharacter(Movement)
 
-    --[[
-    if (_surfer.moveData.velocity.sqrMagnitude == 0f) {
+    if Movement.states.jumping or not Movement.states.grounded then
+        if isSurfing and Movement.collider.Velocity.Y > 0 then
+            Surf()
+        end
 
-                // Do collisions while standing still
-                SurfPhysics.ResolveCollisions (_surfer.collider, ref _surfer.moveData.origin, ref _surfer.moveData.velocity, _surfer.moveData.rigidbodyPushForce, 1f, _surfer.moveData.stepOffset, _surfer);
-
-            } else {
-
-                float maxDistPerFrame = 0.2f;
-                Vector3 velocityThisFrame = _surfer.moveData.velocity * _deltaTime;
-                float velocityDistLeft = velocityThisFrame.magnitude;
-                float initialVel = velocityDistLeft;
-                while (velocityDistLeft > 0f) {
-
-                    float amountThisLoop = Mathf.Min (maxDistPerFrame, velocityDistLeft);
-                    velocityDistLeft -= amountThisLoop;
-
-                    // increment origin
-                    Vector3 velThisLoop = velocityThisFrame * (amountThisLoop / initialVel);
-                    _surfer.moveData.origin += velThisLoop;
-
-                    // don't penetrate walls
-                    SurfPhysics.ResolveCollisions (_surfer.collider, ref _surfer.moveData.origin, ref _surfer.moveData.velocity, _surfer.moveData.rigidbodyPushForce, amountThisLoop / initialVel, _surfer.moveData.stepOffset, _surfer);
-
-                }
-
-            }]]
-
-    if not Movement.states.grounded then
-        Gravity()
         Air()
+        Gravity()
     elseif Movement.Keys.Space > 0 then
         Jump()
         Air()
     else
-        Ground(norm)
+        Ground(result.Normal)
     end
 end
 

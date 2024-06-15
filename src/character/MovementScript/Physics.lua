@@ -1,7 +1,14 @@
 local Types = require(script.Parent:WaitForChild("Types"))
 local Shared = require(script.Parent:WaitForChild("Shared"))
 local Collisions = require(script.Parent:WaitForChild("Collisions"))
+local Trace = require(script.Parent:WaitForChild("Trace"))
 local Physics = {} :: Types.Movement
+
+local function ApplyMoverVelocity(self: Types.Movement, velocity: Vector3): Vector2
+	local vel = Vector2.new(velocity.X, velocity.Z)
+	self.mover.PlaneVelocity = vel
+	return vel
+end
 
 function Physics:ApplyGroundVelocity(groundNormal: Vector3)
     local wishDir = Shared.GetMovementDirection(self, groundNormal)
@@ -27,22 +34,19 @@ function Physics:ApplyGroundVelocity(groundNormal: Vector3)
 	Collisions.CollideAndSlide(self, Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y))
 
 	-- calculate & apply slope movement
-	local curVel: Vector3 = Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y)
-	local collVel: Vector3 = self.collider.Velocity
+	if Shared.GetAngle(groundNormal) < 5 then
+		return
+	end
+	
+	local curVel: Vector3 = Vector3.new(self.mover.PlaneVelocity.X, self.collider.Velocity.Y, self.mover.PlaneVelocity.Y)
 	local forVel: Vector3 = groundNormal:Cross(CFrame.Angles(0,math.rad(90),0).LookVector * curVel)
-	local yVel: Vector3
+	local yVel: number = 0
 
-	if forVel.Magnitude <= 0 then
-		yVel = 0
-	else
+	if forVel.Magnitude > 0 then
 		yVel = forVel.Unit.Y * curVel.Magnitude
 	end
 
-	self.collider.Velocity = Vector3.new(
-		collVel.X,
-		yVel,
-		collVel.Z
-	)
+	self.collider.Velocity = Vector3.new(curVel.X, yVel, curVel.Z)
 end
 
 function Physics:ApplyGroundAcceleration(wishDir: Vector3, wishSpeed: number)
@@ -64,16 +68,15 @@ function Physics:ApplyGroundAcceleration(wishDir: Vector3, wishSpeed: number)
 	
 	-- you can't change the properties of a Vector3, so we do x, y, z
 	newVelocity += (accelerationSpeed * wishDir)
-	--newVelocity = Vector3.new(newVelocity.X, self.sliding and newVelocity.Y or 0, newVelocity.Z)
     newVelocity = Vector3.new(newVelocity.X,  0, newVelocity.Z)
 
 	-- clamp magnitude (max speed)
-	if newVelocity.Magnitude > (self.config.RUN_SPEED --[[self.equippedWeaponPenalty]]) then
+	if newVelocity.Magnitude > (self.config.RUN_SPEED) then
 		newVelocity = newVelocity.Unit * math.min(newVelocity.Magnitude, (self.config.RUN_SPEED))
 	end
 
 	-- apply acceleration
-    self.mover.PlaneVelocity = Vector2.new(newVelocity.X, newVelocity.Z)
+	ApplyMoverVelocity(self, newVelocity)
 end
 
 function Physics:ApplyAirVelocity()
@@ -88,12 +91,14 @@ function Physics:ApplyAirVelocity()
 	end
 
 	-- apply extra friction if necessary
-    if self.states.air_friction > 0 then
-		Physics.ApplyFriction(self, 0.01 * self.states.air_friction)
+    if self.states.air_friction > 0 and not self.states.surfing then
+		Physics.ApplyFriction(self, 0.01 * self.states.air_friction, false)
 	end
 	
 	Physics.ApplyAirAcceleration(self, wishDir, wishSpeed)
-	Collisions.CollideAndSlide(self, Vector3.new(self.mover.PlaneVelocity.X, self.collider.Velocity.Y, self.mover.PlaneVelocity.Y))
+
+	local refVel = Vector3.new(self.mover.PlaneVelocity.X, self.collider.Velocity.Y, self.mover.PlaneVelocity.Y)
+	ApplyMoverVelocity(self, Trace.Reflect(self, refVel, self.collider.Position))
 end
 
 function Physics:ApplyAirAcceleration(wishDir: Vector3, wishSpeed: number)
@@ -116,24 +121,30 @@ function Physics:ApplyAirAcceleration(wishDir: Vector3, wishSpeed: number)
 	local newVelocity = currentVelocity + accelerationSpeed * wishDir
 
 	-- apply acceleration
-	self.mover.PlaneVelocity = Vector2.new(newVelocity.X, newVelocity.Z)
+	ApplyMoverVelocity(self, newVelocity)
 end
 
-function Physics:ApplyFriction(modifier: number?)
-    local vel = Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y)
+function Physics:ApplyFriction(modifier: number?, inAir: boolean?)
+    local vel
+	if inAir then
+		vel = self.collider.Velocity
+	else
+		vel = Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y)
+	end
+
 	local speed = vel.Magnitude
     modifier = modifier or 1
+
+	local drop = 0
+	local fric = inAir and self.config.AIR_FRICTION or self.config.FRICTION
+    local decel = self.config.GROUND_DECCEL
+	local newSpeed
+	local control
 	
 	-- if we're not moving, don't apply friction
 	if speed <= 0 then
 		return vel
 	end
-
-	local drop = 0
-	local fric = self.config.FRICTION
-    local decel = self.config.GROUND_DECCEL
-	local newSpeed
-	local control
 	
 	-- ???
 	control = speed < decel and decel or speed
@@ -147,7 +158,12 @@ function Physics:ApplyFriction(modifier: number?)
 	end
 
     vel *= newSpeed
-    self.mover.PlaneVelocity = Vector2.new(vel.X, vel.Z)
+	ApplyMoverVelocity(self, vel)
+
+	if inAir then
+		local nv = self.mover.VectorVelocity
+		--self.collider.Velocity = Vector3.new(nv.X, self.collider.Velocity.Y * newSpeed, nv.Z)
+	end
 end
 
 return Physics

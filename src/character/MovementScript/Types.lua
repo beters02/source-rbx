@@ -23,6 +23,7 @@ export type MovementConfig = {
     MASS: number,
     GRAVITY: number,
     FRICTION: number,
+    AIR_FRICTION: number,
 
     GROUND_ACCEL: number,
     GROUND_DECCEL: number,
@@ -42,6 +43,7 @@ export type MovementConfig = {
     STEP_OFFSET: number,
     TORSO_TO_FEET: number,
 
+    MIN_SLOPE_ANGLE: number,
     MAX_SLOPE_ANGLE: number,
 }
 
@@ -49,7 +51,21 @@ export type MovementStates = {
     grounded: boolean,
     air_friction: number,
     input_vec: number,
-    surfing: boolean
+    surfing: boolean,
+    jumping: boolean,
 }
 
-return nil
+export type Vec3Mod = {x: number, y: number, z: number, ToVector3: (Vec3Mod) -> Vector3}
+local Vec3Mod = {}
+Vec3Mod.__index = Vec3Mod
+
+function Vec3Mod.new(input: Vector3?) : Vec3Mod
+    input = input or Vector3.zero
+    return setmetatable({x = input.X, y = input.Y, z = input.Z}, Vec3Mod) :: Vec3Mod
+end
+
+function Vec3Mod:ToVector3()
+    return Vector3.new(self.x, self.y, self.z)
+end
+
+return {Vec3Mod = Vec3Mod}
