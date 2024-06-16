@@ -17,7 +17,6 @@ end
 
 for _, v in pairs({"Equip", "Shoot", "Unequip"}) do
     SharedEvents[v].Event:Connect(function()
-        --zprint('Penis ' .. v.Name)
     end)
 end
 
