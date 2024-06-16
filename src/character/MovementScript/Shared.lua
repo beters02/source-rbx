@@ -58,13 +58,12 @@ function Shared:GetMovementDirection(groundNormal)
     if forward == 0 and side == 0 then
         self.states.input_vec = Vector3.zero
         return Vector3.zero
+    else
+        self.states.input_vec = Vector3.new(-side, 0, -forward).Unit
+        local forwardMove = groundNormal:Cross(self.collider.CFrame.RightVector)
+        local sideMove = groundNormal:Cross(forwardMove)
+        return (forwardMove * forward + sideMove * side).Unit
     end
-
-    self.states.input_vec = Vector3.new(-side, 0, -forward).Unit
-
-    local forwardMove = groundNormal:Cross(self.collider.CFrame.RightVector)
-    local sideMove = groundNormal:Cross(forwardMove)
-    return (forwardMove * forward + sideMove * side).Unit
 end
 
 function Shared:GetMovementParams()

@@ -18,6 +18,7 @@ function Physics:ApplyGroundVelocity(groundNormal: Vector3)
     if self.states.air_friction <= 0 then
         Physics.ApplyFriction(self)
     else
+
 		-- friction that is applied due to the player reaching max speed while bhopping
         local sub = self.config.AIR_MAX_SPEED_FRIC_DEC * self.dt * 60
 		local curr = self.states.air_friction
@@ -79,9 +80,10 @@ function Physics:ApplyGroundAcceleration(wishDir: Vector3, wishSpeed: number)
 	ApplyMoverVelocity(self, newVelocity)
 end
 
-function Physics:ApplyAirVelocity()
+function Physics:ApplyAirVelocity(normal)
+	normal = Vector3.new(0,1,0)
 	local vel = Vector3.new(self.mover.PlaneVelocity.X, 0, self.mover.PlaneVelocity.Y)
-    local wishDir = Shared.GetMovementDirection(self, Vector3.new(0,1,0))
+    local wishDir = Shared.GetMovementDirection(self, normal)
     local wishSpeed = wishDir.Magnitude * self.config.AIR_SPEED
     local currSpeed = vel.Magnitude
 

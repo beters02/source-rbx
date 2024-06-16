@@ -28,7 +28,7 @@ local function ClipVelocity(self, input, normal, output, overbounce)
 end
 
 function Trace:TraceBox(start: Vector3, destination: Vector3)
-    local contactOffset = 1 -- idk what this is
+    local contactOffset = 0.1 -- idk what this is
 
     local longSide = math.sqrt(contactOffset * contactOffset + contactOffset * contactOffset)
     local direction = (destination - start).Unit
@@ -91,7 +91,7 @@ function Trace:Reflect(velocity: Vector3, origin: Vector3)
     local d
     local newVelocity = Vector3.zero
     local blocked = 0
-    local numplanes = 0
+    local numplanes = 1
     local originalVelocity = velocity
     local primalVelocity = velocity
 
@@ -148,7 +148,7 @@ function Trace:Reflect(velocity: Vector3, origin: Vector3)
         end
 
         -- Set up next clipping plane
-        _planes[numplanes+1] = trace.planeNormal
+        _planes[numplanes] = trace.planeNormal
         numplanes+=1
 
         -- modify original_velocity so it parallels all of the clip planes
@@ -157,25 +157,23 @@ function Trace:Reflect(velocity: Vector3, origin: Vector3)
         -- reflect player velocity
         -- Only give this a try for first impact plane because you can get yourself stuck in an acute corner by jumping in place
         --  and pressing forward and nobody was really using this bounce/reflection feature anyway...
-        if numplanes == 1 then
-            for i = 1, numplanes, 1 do
-                if _planes[i].Y > self.config.MAX_SLOPE_ANGLE then
-                    return blocked
-                else
-                    newVelocity = ClipVelocity(self, originalVelocity, _planes[i], newVelocity, 1)
-                end
+        if numplanes == 2 then
+            if _planes[1].Y > self.config.MAX_SLOPE_ANGLE then
+                return blocked
+            else
+                newVelocity = ClipVelocity(self, originalVelocity, _planes[1], newVelocity, 1)
             end
             velocity = newVelocity
             originalVelocity = newVelocity
         else
             local _i = 0
-            for i = 1, numplanes, 1 do
+            for i = 1, numplanes-1, 1 do
                 _i = i
 
                 newVelocity = ClipVelocity(self, originalVelocity, _planes[i], newVelocity, 1)
 
                 local _j = 0
-                for j = 1, numplanes, 1 do
+                for j = 1, numplanes-1, 1 do
                     _j = j
                     if j ~= i and velocity:Dot(_planes[j]) < 0 then
                         break
@@ -190,8 +188,7 @@ function Trace:Reflect(velocity: Vector3, origin: Vector3)
             if _i ~= numplanes then
                 
             else
-                
-                if numplanes ~= 2 then
+                if numplanes ~= 3 then
                     velocity = Vector3.zero
                     break
                 end
@@ -199,7 +196,6 @@ function Trace:Reflect(velocity: Vector3, origin: Vector3)
                 local dir = _planes[1]:Cross(_planes[2]).Unit
                 d = dir:Dot(velocity)
                 velocity = dir * d
-
             end
         end
 

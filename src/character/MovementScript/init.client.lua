@@ -5,6 +5,7 @@ local Types = require(script:WaitForChild("Types"))
 local Movement: Types.Movement = {}
 local Physics = require(script:WaitForChild("Physics"))
 local Shared = require(script:WaitForChild("Shared"))
+local Trace = require(script:WaitForChild("Trace"))
 
 local function Init()
     Movement.Keys = {W = 0, S = 0, D = 0, A = 0, Space = 0}
@@ -39,10 +40,6 @@ end
 
 --
 
-local function Surf()
-    Physics.ApplyFriction(Movement, false, true)
-end
-
 local function Gravity()
     local mod = Movement.config.GRAVITY * Movement.dt
     Movement.collider.Velocity = Vector3.new(
@@ -54,6 +51,10 @@ end
 
 local function Air()
     Physics.ApplyAirVelocity(Movement)
+    local vel = Vector3.new(Movement.mover.PlaneVelocity.X, Movement.collider.Velocity.Y, Movement.mover.PlaneVelocity.Y)
+    vel = Trace.Reflect(Movement, vel, Movement.collider.CFrame.Position)
+    Movement.mover.PlaneVelocity = Vector2.new(vel.X, vel.Z)
+    Movement.collider.Velocity = vel
 end
 
 local function Ground(groundNormal: Vector3)
@@ -82,11 +83,15 @@ local function ProcessMovement()
     Shared.RotateCharacter(Movement)
 
     if Movement.states.jumping or not Movement.states.grounded then
-        if isSurfing and Movement.collider.Velocity.Y > 0 then
-            Surf()
+        local groundNormal = false
+        if isSurfing then
+            groundNormal = result.Normal
+            if Movement.collider.Velocity.Y > 0 then
+                --Physics.ApplyFriction(Movement, false, true)
+            end
         end
 
-        Air()
+        Air(groundNormal)
         Gravity()
     elseif Movement.Keys.Space > 0 then
         Jump()
